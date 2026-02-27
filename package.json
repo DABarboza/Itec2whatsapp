@@ -1,0 +1,27 @@
+{
+  "name": "itec2whatsapp",
+  "version": "1.0.0",
+  "description": "Asistente con Inteligencia Artificial para la atención automatizada de la comunidad educativa del ITEC N° 2 Posadas, Misiones.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DABarboza/Itec2whatsapp.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/DABarboza/Itec2whatsapp/issues"
+  },
+  "homepage": "https://github.com/DABarboza/Itec2whatsapp#readme",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "dotenv": "^17.3.1",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.34.6"
+  }
+}
