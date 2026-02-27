@@ -1,0 +1,12 @@
+# Dependencias
+node_modules/
+
+# Configuración de sesión de WhatsApp (MUY IMPORTANTE)
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Claves secretas y variables de entorno
+.env
+
+# Logs de errores
+npm-debug.log*
