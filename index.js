@@ -26,9 +26,21 @@ REGLAS CRÍTICAS DE RESPUESTA:
 // 3. Inicialización de WhatsApp
 const client = new Client({
     authStrategy: new LocalAuth(),
+    authTimeoutMs: 60000, // Le damos más tiempo para procesar el vínculo
     puppeteer: {
         handleSIGINT: false,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--no-zygote',
+            '--single-process',
+            '--disable-extensions',
+            '--no-first-run',
+            // Agregamos esta línea para que WhatsApp crea que es un Chrome moderno:
+            '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'
+        ]
     }
 });
 
