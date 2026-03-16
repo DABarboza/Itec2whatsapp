@@ -51,7 +51,7 @@ const client = new Client({
   authStrategy: new LocalAuth(),
   authTimeoutMs: 60000, // Le damos más tiempo para procesar el vínculo
   puppeteer: {
-    executablePath: '/usr/bin/chromium', // Usar Chromium del sistema
+    executablePath: "/usr/bin/chromium", // Usar Chromium del sistema
     handleSIGINT: false,
     args: [
       "--no-sandbox",
