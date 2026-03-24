@@ -53,6 +53,7 @@ const client = new Client({
   puppeteer: {
     executablePath: "/usr/bin/chromium", // Usar Chromium del sistema
     handleSIGINT: false,
+    headless: true, // Asegurar modo headless
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
@@ -64,9 +65,8 @@ const client = new Client({
       "--no-first-run",
       "--ignore-certificate-errors",
       "--ignore-ssl-errors",
-      "--disable-web-security", // Ignorar errores de certificado
-      // Agregamos esta línea para que WhatsApp crea que es un Chrome moderno:
-      "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36",
+      // Actualizar user-agent a Chrome más reciente
+      "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     ],
   },
 });
