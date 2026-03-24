@@ -57,6 +57,7 @@ const client = new Client({
     dataPath: path.join(__dirname, ".wwebjs_auth"),
   }),
   puppeteer: {
+    executablePath: '/usr/bin/chromium', // Forzamos a usar el Chromium del sistema
     protocolTimeout: 240000,
     // Para el servidor linux, es necesario especificar la ruta a chromium
     // En Windows, puppeteer-core no incluye chromium, debes instalarlo
