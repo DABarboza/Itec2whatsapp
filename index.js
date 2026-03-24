@@ -185,7 +185,7 @@ http
         if (payload.ref === "refs/heads/main") {
           console.log("Webhook recibido: actualizando código...");
           exec(
-            `cd ${PROJECT_DIR} && git pull origin main && pm2 reload all`,
+            `cd ${PROJECT_DIR} && git pull origin main && npm install && pm2 reload all`,
             (err, stdout, stderr) => {
               if (err) console.error("Error en despliegue:", err);
               else console.log("Despliegue automático completado.");
