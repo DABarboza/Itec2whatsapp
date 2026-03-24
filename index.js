@@ -48,10 +48,16 @@ const courseMap = {
 
 // 3. Inicialización de WhatsApp
 const client = new Client({
-  authStrategy: new LocalAuth(),
+  authStrategy: new LocalAuth({
+    clientId: "bot-itec", // mantener misma sesión PM2
+    dataPath: path.join(__dirname, ".wwebjs_auth"),
+  }),
   authTimeoutMs: 60000, // Le damos más tiempo para procesar el vínculo
   puppeteer: {
-    executablePath: "/usr/bin/chromium", // Usar Chromium del sistema
+    // Para el servidor linux, es necesario especificar la ruta a chromium
+    // En Windows, puppeteer-core no incluye chromium, debes instalarlo
+    // y puede que necesites especificar la ruta tambien.
+    executablePath: "/usr/bin/chromium", 
     handleSIGINT: false,
     headless: true, // Asegurar modo headless
     args: [
@@ -59,8 +65,6 @@ const client = new Client({
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
       "--disable-gpu",
-      "--no-zygote",
-      "--single-process",
       "--disable-extensions",
       "--no-first-run",
       "--ignore-certificate-errors",
@@ -160,71 +164,73 @@ client.on("message", async (msg) => {
   }
 });
 
-client.initialize();
 
-// --- AUTOMATIC DEPLOYMENT VIA GITHUB WEBHOOK ---
-// añade a tu .env la variable WEBHOOK_SECRET con el mismo valor que configures
-// en el webhook de GitHub (Settings → Webhooks → Add webhook).
-// El servidor escucha en el puerto 3000 y ejecuta un git pull + pm2 reload cuando
-// recibe un push a la rama main.
-
-const http = require("http");
-const crypto = require("crypto");
-const { exec } = require("child_process");
-
-const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || "";
-const PROJECT_DIR = __dirname; // ruta del proyecto en la netbook
-const PORT = process.env.WEBHOOK_PORT || 3000;
-
-function verifySignature(req, body) {
-  const signature = req.headers["x-hub-signature-256"] || "";
-  const hmac =
-    "sha256=" +
-    crypto.createHmac("sha256", WEBHOOK_SECRET).update(body).digest("hex");
+const start = async () => {
   try {
-    return crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(signature));
-  } catch (e) {
-    return false;
+    console.log("Inicializando cliente de WhatsApp...");
+    await client.initialize();
+    startWebhookServer();
+  } catch (error) {
+    console.error("Error al inicializar el cliente:", error);
+    // Salir si la inicialización falla para que pm2 pueda reiniciar
+    process.exit(1);
   }
-}
+};
 
-http
-  .createServer((req, res) => {
-    if (req.method === "POST" && req.url === "/github-webhook") {
-      let data = "";
-      req.on("data", (chunk) => {
-        data += chunk;
-      });
-      req.on("end", () => {
-        if (!WEBHOOK_SECRET || !verifySignature(req, data)) {
-          res.writeHead(401);
-          return res.end("invalid signature");
-        }
-        let payload;
-        try {
-          payload = JSON.parse(data);
-        } catch (e) {
-          payload = {};
-        }
-        // sólo actuamos sobre pushes a main
-        if (payload.ref === "refs/heads/main") {
-          console.log("Webhook recibido: actualizando código...");
-          exec(
-            `cd ${PROJECT_DIR} && git pull origin main && npm install && pm2 reload all`,
-            (err, stdout, stderr) => {
-              if (err) console.error("Error en despliegue:", err);
-              else console.log("Despliegue automático completado.");
-            },
-          );
-        }
-        res.writeHead(200);
-        res.end("ok");
-      });
-    } else {
-      res.writeHead(404);
-      res.end();
-    }
-  })
-  .listen(PORT, () => {
-    console.log(`Servidor de webhook escuchando en el puerto ${PORT}`);
-  });
+const startWebhookServer = () => {
+  http
+    .createServer((req, res) => {
+      if (req.method === "POST" && req.url === "/github-webhook") {
+        let data = "";
+        req.on("data", (chunk) => {
+          data += chunk;
+        });
+        req.on("end", () => {
+          if (!WEBHOOK_SECRET || !verifySignature(req, data)) {
+            res.writeHead(401);
+            return res.end("invalid signature");
+          }
+          let payload;
+          try {
+            payload = JSON.parse(data);
+          } catch (e) {
+            payload = {};
+          }
+          // sólo actuamos sobre pushes a main
+          if (payload.ref === "refs/heads/main") {
+            console.log("Webhook recibido: actualizando código...");
+            exec(
+              `cd ${PROJECT_DIR} && git pull origin main && npm install && pm2 reload all`,
+              (err, stdout, stderr) => {
+                if (err) console.error("Error en despliegue:", err);
+                else console.log("Despliegue automático completado.");
+              },
+            );
+          }
+          res.writeHead(200);
+          res.end("ok");
+        });
+      } else {
+        res.writeHead(404);
+        res.end();
+      }
+    })
+    .listen(PORT, () => {
+      console.log(`Servidor de webhook escuchando en el puerto ${PORT}`);
+    });
+};
+
+// --- ARRANQUE Y CIERRE ORDENADO ---
+start();
+
+// Manejar cierre ordenado para guardar sesión
+const cleanup = async () => {
+  console.log("Cerrando cliente...");
+  if (client) {
+    await client.destroy();
+  }
+  process.exit(0);
+};
+
+process.on("SIGINT", cleanup);
+process.on("SIGTERM", cleanup);
