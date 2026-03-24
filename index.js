@@ -104,8 +104,22 @@ client.on("message", async (msg) => {
       "utf8",
     );
 
-    // Buscar si la consulta menciona un curso específico
+    // Saludo genérico sin marcar como asistente de ITEC
     const lowerBody = msg.body.toLowerCase();
+    if (
+      lowerBody.includes("hola") ||
+      lowerBody.includes("buen dia") ||
+      lowerBody.includes("buenos dias") ||
+      lowerBody.includes("buenas tardes") ||
+      lowerBody.includes("buenas noches")
+    ) {
+      return await msg.reply(
+        "Buen día! Contame qué curso querés consultar entre: higiene, peluquería, cocina, confección, pastelería, electricidad, etc.",
+      );
+    }
+
+    // Buscar si la consulta menciona un curso específico
+    let foundCourse = false;
     for (const [key, file] of Object.entries(courseMap)) {
       if (lowerBody.includes(key)) {
         const courseData = fs.readFileSync(
@@ -113,8 +127,19 @@ client.on("message", async (msg) => {
           "utf8",
         );
         data += "\n\n" + courseData;
+        foundCourse = true;
         break;
       }
+    }
+
+    if (!foundCourse) {
+      return await msg.reply(
+        "No pude ubicar el curso consultado. " +
+          "Por favor acercate al ITEC N°2 (Av. Zapiola y Calle 7A, Posadas) " +
+          "para obtener información precisa. " +
+          "Atención presencial: Lunes a Viernes 8-12 / 14-18. " +
+          "También podés reintentar con el nombre exacto del curso.",
+      );
     }
 
     // Prompt mejorado para evitar repeticiones de saludo
