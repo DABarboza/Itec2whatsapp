@@ -5,6 +5,10 @@ const { Client, LocalAuth } = require("whatsapp-web.js");
 const qrcode = require("qrcode-terminal");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
+const http = require("http");
+const { exec } = require("child_process");
+const crypto = require("crypto");
+
 // 1. Configuración de Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 // Usamos el modelo Lite que vimos en tu panel para evitar errores de cuota
@@ -52,12 +56,11 @@ const client = new Client({
     clientId: "bot-itec", // mantener misma sesión PM2
     dataPath: path.join(__dirname, ".wwebjs_auth"),
   }),
-  authTimeoutMs: 60000, // Le damos más tiempo para procesar el vínculo
   puppeteer: {
+    protocolTimeout: 240000,
     // Para el servidor linux, es necesario especificar la ruta a chromium
     // En Windows, puppeteer-core no incluye chromium, debes instalarlo
     // y puede que necesites especificar la ruta tambien.
-    executablePath: "/usr/bin/chromium", 
     handleSIGINT: false,
     headless: true, // Asegurar modo headless
     args: [
@@ -176,6 +179,34 @@ const start = async () => {
     process.exit(1);
   }
 };
+
+const PORT = process.env.PORT || 8080;
+const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET;
+const PROJECT_DIR = process.env.PROJECT_DIR || __dirname;
+
+const verifySignature = (req, payload) => {
+    // Asegurarse que el header existe antes de proceder
+    const signatureHeader = req.headers['x-hub-signature-256'];
+    if (!signatureHeader) {
+        console.error("Firma de Webhook no encontrada en la cabecera.");
+        return false;
+    }
+
+    const signature = crypto.createHmac('sha256', WEBHOOK_SECRET)
+                            .update(payload)
+                            .digest('hex');
+    const trusted = Buffer.from(`sha256=${signature}`, 'ascii');
+    const untrusted = Buffer.from(signatureHeader, 'ascii');
+
+    // Comprobar que los buffers tienen la misma longitud antes de comparar
+    if (trusted.length !== untrusted.length) {
+        console.error("Las longitudes de las firmas no coinciden.");
+        return false;
+    }
+
+    return crypto.timingSafeEqual(trusted, untrusted);
+};
+
 
 const startWebhookServer = () => {
   http
